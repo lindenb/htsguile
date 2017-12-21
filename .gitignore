@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+autom4te.cache/
+*~
+config.log
+config.status
+configure
+htsguile
+
