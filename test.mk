@@ -2,7 +2,7 @@ BAM?=test/toy.bam
 FILTERSAM?=./htsguile filtersam
 .PHONY:all
 
-all: $(addprefix test,01 02 03 04 05 06 07 08 09 10 11)
+all: $(addprefix test,01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18)
 
 test01:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (and (> (hts-read-length R ) 10 ) (integer? (string-contains  (hts-read-seq R) "GATAAGGGATA")))))' $(BAM)
@@ -36,8 +36,19 @@ test10:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-reverse-strand? R)))' $(BAM)	
 test11:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-mate-reverse-strand? R)))' $(BAM)	
-test11:
+test12:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-1st-in-pair? R)))' $(BAM)	
-test11:
+test13:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-2nd-in-pair? R)))' $(BAM)	
+test14:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-secondary? R)))' $(BAM)	
+test15:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-qcfail? R)))' $(BAM)	
+test16:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-duplicate? R)))' $(BAM)
+test17:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (hts-read-supplementary? R)))' $(BAM)
+test18:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (> (hts-read-mapq R) 29)))' $(BAM)
+
 	

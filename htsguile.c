@@ -192,12 +192,23 @@ static SCM hts_read_2nd_in_pair(SCM scm_ctx)
 	  (ptr->b->core.flag & BAM_FREAD2)
 	  );
 	}	
-/*
+static SCM hts_read_secondary_align(SCM scm_ctx)
+	{
+	return scm_from_bool(cast_to_ctx_ptr(scm_ctx)->b->core.flag & BAM_FSECONDARY);
+	}
+static SCM hts_read_qcfail(SCM scm_ctx)
+	{
+	return scm_from_bool(cast_to_ctx_ptr(scm_ctx)->b->core.flag & BAM_FQCFAIL);
+	}
+static SCM hts_read_duplicate(SCM scm_ctx)
+	{
+	return scm_from_bool(cast_to_ctx_ptr(scm_ctx)->b->core.flag & BAM_FDUP);
+	}
+static SCM hts_read_supplementary(SCM scm_ctx)
+	{
+	return scm_from_bool(cast_to_ctx_ptr(scm_ctx)->b->core.flag & BAM_FSUPPLEMENTARY);
+	}
 
-    if ( flag&BAM_FSECONDARY ) ksprintf(&str,"%s%s", str.l?",":"","SECONDARY");
-    if ( flag&BAM_FQCFAIL ) ksprintf(&str,"%s%s", str.l?",":"","QCFAIL");
-    if ( flag&BAM_FDUP ) ksprintf(&str,"%s%s", str.l?",":"","DUP");
-    if ( flag&BAM_FSUPPLEMENTARY ) ksprintf(&str,"%s%s", str.l?",":"","SUPPLEMENTARY");*/
 
 static void hts_guile_define_module(void *data UNUSED)
 	{
@@ -216,6 +227,13 @@ static void hts_guile_define_module(void *data UNUSED)
   scm_c_define_gsubr ("hts-read-proper-pair?", 1, 0, 0, hts_read_is_proper_pair);
   scm_c_define_gsubr ("hts-read-unmapped?", 1, 0, 0, hts_read_is_unmapped);
 
+  scm_c_define_gsubr ("hts-read-secondary?", 1, 0, 0, hts_read_secondary_align);
+  scm_c_define_gsubr ("hts-read-qcfail?", 1, 0, 0, hts_read_qcfail);
+  scm_c_define_gsubr ("hts-read-duplicate?", 1, 0, 0, hts_read_duplicate);
+  scm_c_define_gsubr ("hts-read-supplementary?", 1, 0, 0, hts_read_supplementary);
+   scm_c_define_gsubr ("hts-read-mapq", 1, 0, 0, hts_read_mapq); 
+  
+
 	scm_c_export(
 	  "hts-mate-reverse-strand?",
 	  "hts-mate-unmapped?",
@@ -231,6 +249,11 @@ static void hts_guile_define_module(void *data UNUSED)
 		"hts-read-seq",
 		"hts-read-seq-at",
 		"hts-read-unmapped?",
+		"hts-read-secondary?",
+    "hts-read-qcfail?",
+    "hts-read-duplicate?",
+    "hts-read-supplementary?",
+    "hts-read-mapq",
 		NULL);
 
 	}
