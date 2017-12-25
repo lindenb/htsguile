@@ -13,6 +13,8 @@
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 #include "htsguile.h"
+#include "htsguile.scm.h"
+
 #define UNUSED
 #define GUILE_FILTER_NAME "read-filter" 
  
@@ -60,7 +62,32 @@ static SCM hts_read_pos(SCM scm_ctx)
 	HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
 	return  scm_from_signed_integer(ptr->b->core.pos + 1);
 	}
-
+static SCM hts_read_cigar(SCM scm_ctx) {
+  HtsGuileCtxPtr ptr = cast_to_ctx_ptr(scm_ctx);
+  SCM L =  SCM_UNDEFINED;
+  /*if (ptr->b->core.n_cigar>0)
+    {
+    int i;
+    SCM* array=(SCM*)malloc(sizeof(SCM)*(core.n_cigar+1));
+    for (i = 0; i < ptr->b->core.n_cigar; ++i) 
+      {
+      SCM item = scm_cons (
+        scm_from_signed_integer((int) bam_cigar_oplen(cigar[i]) ),
+        scm_from_char(bam_cigar_opchr(cigar[i]))
+        );
+      if(i==0)
+        {
+        L = scm_list_1(item);
+        }
+      else
+        {
+        scm_list_2(
+        }
+      }
+    return L;
+    }*/
+  return SCM_UNDEFINED;
+  }
 
 static SCM hts_read_cigar_string(SCM scm_ctx) {
     SCM cigar_str;
@@ -231,7 +258,9 @@ static void hts_guile_define_module(void *data UNUSED)
   scm_c_define_gsubr ("hts-read-qcfail?", 1, 0, 0, hts_read_qcfail);
   scm_c_define_gsubr ("hts-read-duplicate?", 1, 0, 0, hts_read_duplicate);
   scm_c_define_gsubr ("hts-read-supplementary?", 1, 0, 0, hts_read_supplementary);
-   scm_c_define_gsubr ("hts-read-mapq", 1, 0, 0, hts_read_mapq); 
+  scm_c_define_gsubr ("hts-read-mapq", 1, 0, 0, hts_read_mapq);
+  scm_c_define_gsubr ("hts-read-cigar-string", 1, 0, 0,  hts_read_cigar_string); 
+ 
   
 
 	scm_c_export(
@@ -239,6 +268,7 @@ static void hts_guile_define_module(void *data UNUSED)
 	  "hts-mate-unmapped?",
 	  "hts-read-1st-in-pair?",
 	  "hts-read-2nd-in-pair?",
+	  "hts-read-cigar-string",
 	  "hts-read-flag",
 		"hts-read-paired?",
 		"hts-read-length",
@@ -254,8 +284,10 @@ static void hts_guile_define_module(void *data UNUSED)
     "hts-read-duplicate?",
     "hts-read-supplementary?",
     "hts-read-mapq",
+    "hts-read-clipped?",
 		NULL);
-
+		
+  scm_c_eval_string(__htsguild_scm);
 	}
 
 

@@ -1,7 +1,7 @@
 CC=@CC@
-CFLAGS=@CFLAGS@
+CFLAGS=@CFLAGS@  `guile-config compile`
 CPPFLAGS=@CPPFLAGS@
-LDFLAGS=@LDFLAGS@
+LDFLAGS=@LDFLAGS@ `guile-config link`
 LIBS=@LIBS@
 INSTALL_PFX=@prefix@
 
@@ -26,6 +26,12 @@ $(ALIGNSTATS): $(OBJS)
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@ $(CPPFLAGS)
+
+htsguile.c:htsguile.scm.h
+htsguile.scm.h: htsguile.scm
+	echo  'static const char* __htsguild_scm=""' > $@
+	sed -e 's/"/\\"/g' $< | awk '{printf("\"%s\"\n",$$0);}' >> $@
+	echo  '"";' >> $@
 
 # installs PREFIX/bin/alignstats
 install: $(ALIGNSTATS)
