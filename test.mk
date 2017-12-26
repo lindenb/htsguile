@@ -2,7 +2,7 @@ BAM?=test/toy.bam
 FILTERSAM?=./htsguile filtersam
 .PHONY:all
 
-all: $(addprefix test,01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23)
+all: $(addprefix test,01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25)
 
 test01:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (and (> (hts-read-length R ) 10 ) (integer? (string-contains  (hts-read-seq R) "GATAAGGGATA")))))' $(BAM)
@@ -60,4 +60,7 @@ test22:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (string=? (hts-read-contig R) "ref")))' $(BAM)
 test23:
 	$(FILTERSAM) -e  '(define read-filter (lambda (R) (not (= (hts-read-tid R) 1))))' $(BAM)
-
+test24:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (not (= (hts-read-pos R) (hts-read-unclipped-start R)))))' $(BAM)
+test25:
+	$(FILTERSAM) -e  '(define read-filter (lambda (R) (not (= (hts-read-end R) (hts-read-unclipped-end R)))))' $(BAM)

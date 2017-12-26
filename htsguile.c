@@ -109,6 +109,99 @@ static SCM hts_read_pos(SCM scm_ctx)
 	HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
 	return  scm_from_signed_integer(ptr->b->core.pos + 1);
 	}
+	
+static SCM hts_read_unclipped_start(SCM scm_ctx)
+	{
+	HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
+	if(ptr->b->core.flag & BAM_FUNMAP) return scm_from_signed_integer(0);
+	int pos = ptr->b->core.pos + 1;
+  int i;
+	uint32_t *cigar = bam_get_cigar(ptr->b);
+  for (i = 0; i < ptr->b->core.n_cigar; ++i) 
+      {
+      switch(bam_cigar_opchr(cigar[i]))
+        {
+        case 'S':
+        case 'H': pos -= bam_cigar_oplen(cigar[i]);break;
+        default: return scm_from_signed_integer(pos);
+        }
+      }
+  return  scm_from_signed_integer(pos);
+	}
+
+static SCM hts_read_reference_length(SCM scm_ctx)
+	{
+	HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
+	if(ptr->b->core.flag & BAM_FUNMAP) return scm_from_signed_integer(0);
+  int i,L=0;
+	uint32_t *cigar = bam_get_cigar(ptr->b);
+  for (i = 0; i < ptr->b->core.n_cigar; ++i) 
+      {
+      switch(bam_cigar_opchr(cigar[i]))
+        {
+        case 'M':
+        case 'D':
+        case 'N':
+        case 'X':
+        case '=': L+= bam_cigar_oplen(cigar[i]);break;
+        default: break;
+        }
+      }
+  return  scm_from_signed_integer(L);
+	}
+
+static SCM hts_read_reference_end(SCM scm_ctx)
+	{
+	HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
+	if(ptr->b->core.flag & BAM_FUNMAP) return scm_from_signed_integer(0);
+  int i=0,pos = ptr->b->core.pos + 1 ;
+	uint32_t *cigar = bam_get_cigar(ptr->b);
+  for (i = 0; i < ptr->b->core.n_cigar; ++i) 
+      {
+      switch(bam_cigar_opchr(cigar[i]))
+        {
+        case 'M':
+        case 'D':
+        case 'N':
+        case 'X':
+        case '=': pos+= bam_cigar_oplen(cigar[i]);break;
+        default: break;
+        }
+      }
+  return  scm_from_signed_integer(pos);
+	}
+
+static SCM hts_read_unclipped_end(SCM scm_ctx)
+	{
+  HtsGuileCtxPtr ptr=cast_to_ctx_ptr(scm_ctx);
+	if(ptr->b->core.flag & BAM_FUNMAP) return scm_from_signed_integer(0);
+  int pos = ptr->b->core.pos + 1 ;
+	uint32_t *cigar = bam_get_cigar(ptr->b);
+	int i=0;
+	while(i < ptr->b->core.n_cigar) 
+      {
+      char op=bam_cigar_opchr(cigar[i]);
+      if(!(op=='S' || op=='H')) break;
+      i++;
+      }
+  while(i < ptr->b->core.n_cigar) 
+      {
+      switch(bam_cigar_opchr(cigar[i]))
+        {
+        case 'H':
+        case 'S':
+        case 'M':
+        case 'D':
+        case 'N':
+        case 'X':
+        case '=': pos+= bam_cigar_oplen(cigar[i]);break;
+        default: break;
+        }
+      i++;
+      }
+  return  scm_from_signed_integer(pos);
+	}		
+	
 static SCM hts_read_cigar(SCM scm_ctx) {
   HtsGuileCtxPtr ptr = cast_to_ctx_ptr(scm_ctx);
   SCM L;
@@ -294,6 +387,9 @@ static void hts_guile_define_module(void *data UNUSED)
 	scm_c_define_gsubr ("hts-read-length", 1, 0, 0, hts_read_seq_length);
 	scm_c_define_gsubr ("hts-read-name", 1, 0, 0, hts_read_name);
 	scm_c_define_gsubr ("hts-read-pos", 1, 0, 0, hts_read_pos);
+	scm_c_define_gsubr ("hts-read-end", 1, 0, 0, hts_read_reference_end);
+	scm_c_define_gsubr ("hts-read-unclipped-start", 1, 0, 0, hts_read_unclipped_start);
+	scm_c_define_gsubr ("hts-read-unclipped-end", 1, 0, 0, hts_read_unclipped_end);
 	scm_c_define_gsubr ("hts-read-reverse-strand?", 1, 0, 0, hts_read_reverse_strand);
 	scm_c_define_gsubr ("hts-read-seq", 1, 0, 0, hts_read_seq);
   scm_c_define_gsubr ("hts-read-seq-at", 2, 0, 0, hts_read_seq_at);
@@ -336,6 +432,9 @@ static void hts_guile_define_module(void *data UNUSED)
     "hts-read-supplementary?",
     "hts-read-mapq",
     "hts-read-clipped?",
+    "hts-read-unclipped-start",
+	  "hts-read-unclipped-end",
+	  "hts-read-end",
 		NULL);
 		
   scm_c_eval_string(__htsguild_scm);
@@ -351,6 +450,24 @@ return NULL;
 
 static void usage_filter() {
 }
+
+
+static HtsGuileCtxPtr HtsGuileCtxNew()
+  {
+  HtsGuileCtxPtr ptr=(HtsGuileCtxPtr)malloc(sizeof(HtsGuileCtx));
+  memset((void*)ptr,0,sizeof(HtsGuileCtx));
+  ptr->b = bam_init1();
+  return ptr;
+  }
+
+static void* HtsGuileCtxFree(HtsGuileCtxPtr ptr)
+  {
+  if(ptr==NULL) return NULL;
+  if(ptr->b!=NULL) bam_destroy1(ptr->b);
+  ptr->b = NULL;
+  free(ptr);
+  return NULL;
+  }
 
 int main_filtersam(int argc,char** argv) {
 	char* scriptexpr=NULL;
@@ -471,8 +588,6 @@ SCM filterproc = scm_variable_ref(filterfun);
     }
   output_mode[i++]='\0';
   
-  
-  
 	if ((out = sam_open_format(outputfile?outputfile: "-", output_mode, &ga_out)) == 0)
 	  {
 	  return EXIT_FAILURE;
@@ -482,13 +597,18 @@ SCM filterproc = scm_variable_ref(filterfun);
                 fprintf(stderr, "[main_samview] failed to write the SAM header\n");
               return EXIT_FAILURE;
             }
-    bam1_t *b = bam_init1();
+
       int r;
-      HtsGuileCtx ctx;
-      	ctx.header = header;
-      while ((r = sam_read1(in, header, b)) >= 0) { // read one alignment from `in'
-         ctx.b  = b;
-         SCM sc_ptr = scm_from_pointer((void*)&ctx,NULL);
+      for(;;)
+         {
+         HtsGuileCtxPtr ctx = HtsGuileCtxNew();
+         ctx->header = header;
+         if((r = sam_read1(in, ctx->header, ctx->b)) < 0)
+            {
+            HtsGuileCtxFree(ctx);
+            break;
+            }
+         SCM sc_ptr = scm_from_pointer((void*)ctx,(scm_t_pointer_finalizer)HtsGuileCtxFree);
          SCM ret=scm_call_1(filterproc,sc_ptr);
          if(scm_is_bool(ret))
             {
@@ -500,18 +620,18 @@ SCM filterproc = scm_variable_ref(filterfun);
         		continue;
         		}
 
-          r = sam_write1(out, header, b);
+          r = sam_write1(out, ctx->header, ctx->b);
           if (r < 0)
             {
-            return EXIT_FAILURE;
+             fprintf(stderr, "[htsguile] cannot write.\n");
+             return EXIT_FAILURE;
              }
             
           if (r < -1) {
-            fprintf(stderr, "[main_samview] truncated file.\n");
-              return EXIT_FAILURE;
+             fprintf(stderr, "[htsguile] truncated file.\n");
+             return EXIT_FAILURE;
             }
           }
-   bam_destroy1(b);
    sam_close(in);
    sam_close(out);
    if ( header ) bam_hdr_destroy(header);
