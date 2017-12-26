@@ -17,7 +17,54 @@
 
 #define UNUSED
 #define GUILE_FILTER_NAME "read-filter" 
- 
+
+typedef struct cigaroperator {
+  char name;
+  int consume_read;
+  int consume_ref;
+  } CigarOperator,*CigarOperatorPtr;
+
+static CigarOperator CIGAR_OP_M={'M',1,1};
+static CigarOperator CIGAR_OP_I={'I',1,0};
+static CigarOperator CIGAR_OP_S={'S',1,0};
+static CigarOperator CIGAR_OP_H={'H',0,0};
+static CigarOperator CIGAR_OP_D={'D',0,1};
+static CigarOperator CIGAR_OP_N={'N',0,1};
+static CigarOperator CIGAR_OP_X={'X',1,1};
+static CigarOperator CIGAR_OP_EQ={'=',1,1};
+static CigarOperator CIGAR_OP_P={'P',0,0};
+
+static CigarOperatorPtr CigarOperatorFromName(char c)
+  {
+  switch(c)
+    {
+    case 'M': return &CIGAR_OP_M;
+    case 'I': return &CIGAR_OP_I;
+    case 'S': return &CIGAR_OP_S;  
+    case 'H': return &CIGAR_OP_H;
+    case 'D': return &CIGAR_OP_D;  
+    case 'N': return &CIGAR_OP_N;
+    case 'X': return &CIGAR_OP_X;
+    case '=': return &CIGAR_OP_EQ;
+    case 'P': return &CIGAR_OP_P;
+    default: fprintf(stderr,"BAD CIGAR OPERATOR %c\n",c);exit(EXIT_FAILURE);
+    }
+  }
+
+typedef struct cigarelement {
+  int length;
+  CigarOperatorPtr op;
+  } CigarElement,*CigarElementPtr;
+
+
+static CigarElementPtr makeCigarElement(int length,char op)
+  {
+  CigarElementPtr ce = (CigarElementPtr)malloc(sizeof(CigarElement));
+  ce->length = length;
+  ce->op = CigarOperatorFromName(op);
+  return ce;
+  }
+
 static SCM make_mod = SCM_EOL;
 
 static HtsGuileCtxPtr cast_to_ctx_ptr(SCM scm_ctx)
@@ -72,10 +119,13 @@ static SCM hts_read_cigar(SCM scm_ctx) {
     uint32_t *cigar = bam_get_cigar(ptr->b);
     for (i = 0; i < ptr->b->core.n_cigar; ++i) 
         {
-        SCM item = scm_cons (
-          scm_from_signed_integer((int) bam_cigar_oplen(cigar[i]) ),
-          scm_from_char(bam_cigar_opchr(cigar[i]))
-          );
+        SCM item =  scm_from_pointer(
+              (void*)makeCigarElement(
+                (int) bam_cigar_oplen(cigar[i]),
+                bam_cigar_opchr(cigar[i])
+                ),
+               free
+              );
         scm_vector_set_x (L, scm_from_int (i), item);
         }
     }
