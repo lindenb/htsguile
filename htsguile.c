@@ -64,29 +64,26 @@ static SCM hts_read_pos(SCM scm_ctx)
 	}
 static SCM hts_read_cigar(SCM scm_ctx) {
   HtsGuileCtxPtr ptr = cast_to_ctx_ptr(scm_ctx);
-  SCM L =  SCM_UNDEFINED;
-  /*if (ptr->b->core.n_cigar>0)
+  SCM L;
+  if(ptr->b->core.n_cigar>0)
     {
-    int i;
-    SCM* array=(SCM*)malloc(sizeof(SCM)*(core.n_cigar+1));
+    int i=0;
+    L = scm_c_make_vector ((int)(ptr->b->core.n_cigar),SCM_UNDEFINED);
+    uint32_t *cigar = bam_get_cigar(ptr->b);
     for (i = 0; i < ptr->b->core.n_cigar; ++i) 
-      {
-      SCM item = scm_cons (
-        scm_from_signed_integer((int) bam_cigar_oplen(cigar[i]) ),
-        scm_from_char(bam_cigar_opchr(cigar[i]))
-        );
-      if(i==0)
         {
-        L = scm_list_1(item);
+        SCM item = scm_cons (
+          scm_from_signed_integer((int) bam_cigar_oplen(cigar[i]) ),
+          scm_from_char(bam_cigar_opchr(cigar[i]))
+          );
+        scm_vector_set_x (L, scm_from_int (i), item);
         }
-      else
-        {
-        scm_list_2(
-        }
-      }
-    return L;
-    }*/
-  return SCM_UNDEFINED;
+    }
+  else
+    {
+    L = scm_c_make_vector (0,SCM_UNDEFINED);
+    }
+  return L;
   }
 
 static SCM hts_read_cigar_string(SCM scm_ctx) {
@@ -260,8 +257,9 @@ static void hts_guile_define_module(void *data UNUSED)
   scm_c_define_gsubr ("hts-read-supplementary?", 1, 0, 0, hts_read_supplementary);
   scm_c_define_gsubr ("hts-read-mapq", 1, 0, 0, hts_read_mapq);
   scm_c_define_gsubr ("hts-read-cigar-string", 1, 0, 0,  hts_read_cigar_string); 
- 
-  
+  scm_c_define_gsubr ("hts-read-cigar", 1, 0, 0,  hts_read_cigar); 
+  scm_c_define_gsubr ("hts-read-contig", 1, 0, 0,  hts_read_contig); 
+  scm_c_define_gsubr ("hts-read-tid", 1, 0, 0,  hts_read_tid); 
 
 	scm_c_export(
 	  "hts-mate-reverse-strand?",
@@ -269,6 +267,8 @@ static void hts_guile_define_module(void *data UNUSED)
 	  "hts-read-1st-in-pair?",
 	  "hts-read-2nd-in-pair?",
 	  "hts-read-cigar-string",
+	  "hts-read-cigar",
+	  "hts-read-contig",
 	  "hts-read-flag",
 		"hts-read-paired?",
 		"hts-read-length",
@@ -278,6 +278,7 @@ static void hts_guile_define_module(void *data UNUSED)
 		"hts-read-reverse-strand?",
 		"hts-read-seq",
 		"hts-read-seq-at",
+		"hts-read-tid",
 		"hts-read-unmapped?",
 		"hts-read-secondary?",
     "hts-read-qcfail?",
@@ -307,7 +308,7 @@ int main_filtersam(int argc,char** argv) {
 	char* outputfile=NULL;
 	int binary=0;
 	int compress_level=5;
-	samFile *in = 0, *out = 0, *un_out=0;
+	samFile *in = 0, *out = 0;
 
 	
 	for(;;)
