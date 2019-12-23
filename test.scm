@@ -1,0 +1,8 @@
+(define vcfin (hts-open "/home/lindenb/20170227.WGS.RemapJ1837.LumpyExpress.vcf.gz" "r"))
+(define vcfout (hts-open "jeter.vcf" "w"))
+(define hdr (bcf-hdr-read vcfin))
+(bcf-hdr-write vcfout hdr)
+(hts-close vcfin)
+(hts-close vcfout)
+(bcf-hdr-samples hdr)
+(bcf-hdr-sample hdr 1)
