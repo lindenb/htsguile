@@ -3,15 +3,26 @@
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
-
+#include <libguile/snarf.h>
 #include "bcfguile.h"
+
+
+VariantContextPtr variant = NULL;
+
+SCM_DEFINE (scm_bcf_is_snp, "is-snp?", 0, 0, 0,
+           (),
+           "return true is variant is SNP")
+{
+return scm_from_bool(bcf_is_snp(variant->rec));
+}
+
 
 int main(int argc,char** argv) {
 int c;
 char* filenameout = NULL;
 char* guilexpr = NULL;
 struct VariantContext ctx;
-
+variant = &ctx;
 while ((c = getopt (argc, argv, "o:e:")) != -1)
  {
  switch (c)
@@ -26,10 +37,20 @@ while ((c = getopt (argc, argv, "o:e:")) != -1)
        	return EXIT_FAILURE;
     }
  }
+/* initialize guile */
+scm_init_guile();
+#ifndef SCM_MAGIC_SNARFER
+#include "bcfguile.x"
+#endif
+ 
+ 
 if(guilexpr==NULL) {
 	fprintf(stderr,"Undefined scheme expression.\n");
 	return EXIT_FAILURE;
 	}
+	
+scm_c_eval_string (guilexpr);
+	
 if(!(optind==argc || optind+1==argc)) {
 	fprintf(stderr,"Illegal number of arguments.\n");
 	return EXIT_FAILURE;

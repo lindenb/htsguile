@@ -1,8 +1,11 @@
 HTSLIB=../htslib
 CC=gcc
-CFLAGS=-Wall -I$(HTSLIB)
-LDFLAGS=-L$(HTSLIB)
+CFLAGS=-g -Wall -I$(HTSLIB) `guile-config  compile`
+LDFLAGS=-L$(HTSLIB) `guile-config  link`
 bcfguile : bcfguile.o
-	$(CC) -o $@  $(LDFLAGS) $^ -lhts 
-bcfguile.o : bcfguile.c bcfguile.h
+	$(CC) -o $@   $^ $(LDFLAGS) -lhts
+
+bcfguile.o : bcfguile.c bcfguile.h bcfguile.x
 	$(CC) -c -o $@ $(CFLAGS) $<
+bcfguile.x : bcfguile.c bcfguile.h
+	guile-snarf -o $@ $(CFLAGS) $<
