@@ -56,4 +56,5 @@ config.log
 config.status
 configure
 htsguile
-
+bcfguile.x
+bcfguile

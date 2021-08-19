@@ -9,3 +9,6 @@ bcfguile.o : bcfguile.c bcfguile.h bcfguile.x
 	$(CC) -c -o $@ $(CFLAGS) $<
 bcfguile.x : bcfguile.c bcfguile.h
 	guile-snarf -o $@ $(CFLAGS) $<
+
+clean:
+	rm -f bcfguile.x bcfguile.o bcfguile
