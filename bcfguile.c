@@ -1,3 +1,9 @@
+/*
+
+
+SMOB: https://github.com/gitGNU/gnu_guile-cairo/blob/9265a5f26ae442187f3847c59eea7e30f948287c/guile-cairo/guile-cairo-smob-types.c
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
